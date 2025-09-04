@@ -19,7 +19,7 @@ No vídeo abaixo, mostro o fluxo principal com áudio, com o seguinte workflow:
 1. O usuário envia uma mensagem - Trigger do Telegram é ativado, em seguida um bloco IF verifica se é uma mensagem de áudio ou texto.
 2. Caso for uma mensagem de áudio (como é o caso no vídeo), ocorre a transcrição para texto (com o intuito de passar mais facilmente os dados/contexto para o modelo).
 3. O contexto (prompt e dados) são passados para o Agente (conectado com o Gemini Flash 2.5). Nesse bloco há uma Tool que chama um sub-workflow capaz de fazer requisições para a API que criei.
-4. Após obter os dados corretamente, o agente retorna uma mensagem para o usuário. Sempre respeitando o tipo de mensagem que o user mandou (áudio ou texto).
+4. Após obter os dados corretamente (usando um endpoint específico que reconhece a intenção do usuário), o agente retorna uma mensagem para o usuário. Sempre respeitando o tipo de mensagem que o user mandou (áudio ou texto).
 
 https://github.com/user-attachments/assets/61039d75-ca10-41cb-83bc-0c6c1c5c931d
 
