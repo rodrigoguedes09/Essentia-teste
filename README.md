@@ -6,7 +6,11 @@
 [![Tests](https://img.shields.io/badge/Tests-45%20Passing-brightgreen.svg)](#testes)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Sistema de automação médica desenvolvido em Python com Flask, oferecendo uma API REST robusta para gerenciamento de pacientes, médicos, agendamentos e assistente virtual inteligente. A aplicação inclui sistema de cache Redis para otimização de performance e suíte completa de testes automatizados.
+Sistema de automação médica desenvolvido em Python com Flask, oferecendo uma API REST robusta para gerenciamento de pacientes, médicos, agendamentos e assistente virtual inteligente. A aplicação inclui sistema de cache Redis para otimização de performance e suíte completa de testes automatizados. Para deixar mais fácil a visualização e testes, integratei todo o sistema com o Telegram (via N8N), desta forma é fácil verificar e reconhecer as funcionalidades do projeto.
+
+Resumidamente, utilizei Flask para a base da API REST, ngrok para fazer o deploy dessa API (e poder vincular ao N8N para ter a simulação mais fiel de uma aplicação real), N8N com agentes (integrado com a API para obter dados) e SQLite para o banco de dados. Caso deseje fazer algum teste, o chat do Telegram vinculado á aplicação é https://t.me/EssentiaTest_bot. Em um cenário real, o ideal seria fazer o deploy com Heroku, Railway ou qualquer outra ferramenta do tipo, evitando ficar limitado ao localhost.
+
+**Caso o agente não consiga obter os dados será porque a API não está mais rodando em minha máquina, mas configurando o projeto em seu computador e alterando todos os paramêtros (APIS do ElevenLabs e Gemini do N8N principalmente) será possível ter o mesmo resultado).**
 
 ## Demonstração do Sistema
 
