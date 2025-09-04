@@ -12,7 +12,7 @@ Sistema de automação médica desenvolvido em Python com Flask, oferecendo uma 
 
 ### Funcionalidades Principais
 
-[![Demonstração do Sistema](https://img.youtube.com/vi/oVtqVpwjqBs/maxresdefault.jpg)](https://youtube.com/shorts/oVtqVpwjqBs)
+https://github.com/user-attachments/assets/61039d75-ca10-41cb-83bc-0c6c1c5c931d
 
 **Gerenciamento de Pacientes:**
 - Cadastro completo com validação de CPF, email e telefone
