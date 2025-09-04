@@ -77,11 +77,15 @@ O sistema foi desenvolvido com integração nativa para N8N (Node Automation), p
 
 **Webhook Endpoints:** Todos os endpoints da API são compatíveis com webhooks do N8N, permitindo triggers automáticos baseados em eventos.
 
+**Integração com ElevenLabs:** Para fazer as transformações TTL e LTT, foi utilizado a API do ElevenLabs
+
+**Agente conectado com Gemini:** Na parte de integração com agente/IA, optei por utilizar um agente que usa o Gemini 2.5 Flash (ótimo por causa do custo de rápidez)
+
+**Confirmação por email:** Para acessar os dados e também para enviar o email de confirmação, utilizei um sub-workflow trigger, que é usado como Tool do Agente de IA.
+
 **Processamento de Dados:** Respostas estruturadas em JSON facilitam o processamento por nodes do N8N.
 
 **Assistente Virtual:** O endpoint `/ai-agent` oferece processamento de linguagem natural para automação de conversas.
-
-**Cache e Performance:** Sistema otimizado para múltiplas requisições simultâneas do N8N.
 
 ### Configuração N8N
 
@@ -491,32 +495,6 @@ tests/test_api_integration.py::TestAPIEndpoints::test_ai_agent_payment_info_requ
 tests/test_api_integration.py::TestCacheService::test_cache_fallback_behavior PASSED               [100%]
 
 ====================================================================== 45 passed in 9.74s =======================================================================
-```
-
-## Configuração e Personalização
-
-### Variáveis de Ambiente
-
-Crie um arquivo `.env` baseado no `.env.example`:
-
-```bash
-# Configuração do banco de dados
-DATABASE_URL=sqlite:///medical_automation.db
-
-# Configuração do Redis (opcional)
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_DB=0
-REDIS_PASSWORD=
-
-# Configuração da aplicação
-FLASK_ENV=development
-FLASK_DEBUG=True
-SECRET_KEY=your-secret-key-here
-
-# Configuração de cache
-CACHE_DEFAULT_TTL=300
-CACHE_ENABLED=True
 ```
 
 ## Licença
