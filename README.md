@@ -12,6 +12,8 @@ Sistema de automação médica desenvolvido em Python com Flask, oferecendo uma 
 
 ### Funcionalidades Principais
 
+[![Demonstração do Sistema](https://img.youtube.com/vi/oVtqVpwjqBs/maxresdefault.jpg)](https://youtube.com/shorts/oVtqVpwjqBs)
+
 **Gerenciamento de Pacientes:**
 - Cadastro completo com validação de CPF, email e telefone
 - Consulta, atualização e remoção de registros
@@ -79,12 +81,8 @@ O sistema foi desenvolvido com integração nativa para N8N (Node Automation), p
 
 ### Configuração N8N
 
-[Placeholder: Instruções detalhadas de configuração do N8N serão adicionadas aqui, incluindo:
-- Configuração de webhooks
-- Exemplos de workflows
-- Mapeamento de dados
-- Tratamento de respostas
-- Casos de uso práticos]
+<img width="2108" height="1478" alt="image" src="https://github.com/user-attachments/assets/d1bd3f2b-3cae-4921-95c8-a7bf96779144" />
+
 
 ## Início Rápido
 
@@ -687,44 +685,6 @@ gunicorn --bind 0.0.0.0:5000 src.app:app
 - **[N8N Integration Guide](n8n-workflow-guide.md)** - Guia de integração com N8N
 - **[Test Documentation](tests/TEST_DOCUMENTATION.md)** - Documentação completa dos testes
 
-## Contribuindo
-
-### Como Contribuir
-
-1. **Fork** o repositório
-2. **Crie** uma branch para sua feature (`git checkout -b feature/nova-feature`)
-3. **Commit** suas mudanças (`git commit -m 'Adiciona nova feature'`)
-4. **Push** para a branch (`git push origin feature/nova-feature`)
-5. **Abra** um Pull Request
-
-### Reportando Bugs
-
-Ao reportar bugs, inclua:
-- Descrição detalhada do problema
-- Passos para reproduzir
-- Logs de erro (se houver)
-- Versão do Python e sistema operacional
-- Saída dos testes (`pytest tests/ -v`)
-
-### Sugerindo Features
-
-Para sugerir novas funcionalidades:
-- Descreva o caso de uso
-- Explique o benefício esperado
-- Forneça exemplos de implementação
-- Considere compatibilidade backward
-
-## Changelog
-
-### v1.0.0 (2025-09-03)
-- API REST completa com Flask
-- Sistema de cache Redis implementado
-- 45 testes automatizados (100% passando)
-- AI Agent integrado
-- Documentação completa
-- Integração com N8N
-- Suporte a Docker
-- CI/CD configurado
 
 ## Licença
 
@@ -732,16 +692,4 @@ Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](L
 
 ---
 
-## Status do Projeto
 
-**Produção Ready** - Sistema completo, testado e documentado
-
-**Estatísticas:**
-- 45 testes (100% passando)
-- Cobertura de código > 90%
-- Performance otimizada com cache
-- Segurança validada
-- Documentação completa
-- Docker suportado
-
-**Desenvolvido para automação médica eficiente**
