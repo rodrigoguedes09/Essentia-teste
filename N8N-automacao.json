@@ -1,0 +1,1012 @@
+{
+  "name": "Teste2",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "message"
+            },
+            {
+              "name": "user_id"
+            },
+            {
+              "name": "user_name"
+            },
+            {
+              "name": "chat_id"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        64,
+        816
+      ],
+      "id": "3a78a166-dc79-46b0-8444-87d61ffe1fd0",
+      "name": "Workflow Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dcace3687a26.ngrok-free.app/api/v1/agent",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"ngrok-skip-browser-warning\": \"true\",\n  \"Content-Type\": \"application/json\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"message\": \"{{ $json.message }}\",\n  \"user_id\": \"{{ $json.user_id || 'telegram_user_default' }}\",\n  \"user_name\": \"{{ $json.user_name || '' }}\",\n  \"chat_id\": \"{{ $json.chat_id || '' }}\"\n}",
+        "options": {}
+      },
+      "id": "6a94952f-c203-4aa0-a4af-312fbddbf5ea",
+      "name": "Call Medical API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        304,
+        816
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "appointment-booked-condition",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.response }}",
+                    "rightValue": "Consulta agendada com sucesso"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "AppointmentBooked"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "appointment-cancelled-condition",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.response }}",
+                    "rightValue": "cancelada com sucesso"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "AppointmentCancelled"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "default-condition",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "leftValue": "",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Default"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "14c173c5-3e41-4966-b04c-c67e8f274864",
+      "name": "Check Action Type",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        480,
+        816
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract appointment details from the API response\nconst response = $input.all()[0].json.response;\nconst userMessage = $('Workflow Trigger').first().json.message;\nconst userName = $('Workflow Trigger').first().json.user_name || 'Paciente';\n\n// Extract patient info from the response\nlet patientName = userName;\nlet doctorName = '';\nlet appointmentDate = '';\nlet appointmentTime = '';\nlet patientEmail = '';\n\n// Parse the response to extract appointment details\nconst responseText = response || '';\n\n// Extract doctor name\nconst doctorMatch = responseText.match(/Dr\\. ([A-Za-z\\s]+)/i);\nif (doctorMatch) {\n  doctorName = doctorMatch[1].trim();\n}\n\n// Extract date (DD/MM/YYYY format)\nconst dateMatch = responseText.match(/(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\nif (dateMatch) {\n  appointmentDate = `${dateMatch[1]}/${dateMatch[2]}/${dateMatch[3]}`;\n}\n\n// Extract time (HH:MM format)\nconst timeMatch = responseText.match(/(\\d{1,2}):(\\d{2})/);\nif (timeMatch) {\n  appointmentTime = `${timeMatch[1]}:${timeMatch[2]}`;\n}\n\n// Extract patient name from response if available\nconst patientMatch = responseText.match(/Paciente:\\*\\*\\s*([^\\n]+)/);\nif (patientMatch) {\n  patientName = patientMatch[1].trim();\n}\n\n// Generate a sample email (in real scenario, this would come from user registration)\nif (!patientEmail) {\n  const emailBase = patientName.toLowerCase().replace(/\\s+/g, '.');\n  patientEmail = `${emailBase}@email.com`;\n}\n\nreturn {\n  json: {\n    patientName: patientName,\n    patientEmail: patientEmail,\n    doctorName: doctorName,\n    appointmentDate: appointmentDate,\n    appointmentTime: appointmentTime,\n    originalResponse: response,\n    userMessage: userMessage\n  }\n};"
+      },
+      "id": "d2d8faf2-0def-49ec-af9a-aefe9c6af256",
+      "name": "Extract Appointment Details",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        720,
+        720
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.patientEmail }}",
+        "subject": "Confirmação de Consulta Médica",
+        "message": {
+          "to": "={{ $json.patientEmail }}",
+          "subject": "✅ Confirmação de Consulta Médica",
+          "emailFormat": "html",
+          "html": "=<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <style>\n        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n        .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n        .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }\n        .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }\n        .appointment-details { background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n        .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }\n        .detail-label { font-weight: bold; color: #555; }\n        .detail-value { color: #333; }\n        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }\n        .logo { font-size: 24px; margin-bottom: 10px; }\n        .success-icon { font-size: 48px; margin-bottom: 15px; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <div class=\"success-icon\">✅</div>\n            <h1>Consulta Agendada com Sucesso!</h1>\n            <div class=\"logo\">🏥 Clínica Médica Digital</div>\n        </div>\n        \n        <div class=\"content\">\n            <h2>Olá, {{ $json.patientName }}!</h2>\n            <p>Sua consulta foi agendada com sucesso. Confira os detalhes abaixo:</p>\n            \n            <div class=\"appointment-details\">\n                <h3>📋 Detalhes da Consulta</h3>\n                \n                <div class=\"detail-row\">\n                    <span class=\"detail-label\">👤 Paciente:</span>\n                    <span class=\"detail-value\">{{ $json.patientName }}</span>\n                </div>\n                \n                <div class=\"detail-row\">\n                    <span class=\"detail-label\">👨‍⚕️ Médico:</span>\n                    <span class=\"detail-value\">{{ $json.doctorName || 'Dr. Especialista' }}</span>\n                </div>\n                \n                <div class=\"detail-row\">\n                    <span class=\"detail-label\">📅 Data:</span>\n                    <span class=\"detail-value\">{{ $json.appointmentDate || 'A confirmar' }}</span>\n                </div>\n                \n                <div class=\"detail-row\">\n                    <span class=\"detail-label\">🕐 Horário:</span>\n                    <span class=\"detail-value\">{{ $json.appointmentTime || 'A confirmar' }}</span>\n                </div>\n                \n                <div class=\"detail-row\">\n                    <span class=\"detail-label\">📍 Local:</span>\n                    <span class=\"detail-value\">Clínica Médica Digital<br>Rua da Saúde, 123 - Centro</span>\n                </div>\n                \n                <div class=\"detail-row\">\n                    <span class=\"detail-label\">📱 Contato:</span>\n                    <span class=\"detail-value\">(11) 9999-8888</span>\n                </div>\n            </div>\n            \n            <h3>📝 Instruções Importantes:</h3>\n            <ul>\n                <li>Chegue com 15 minutos de antecedência</li>\n                <li>Traga um documento com foto</li>\n                <li>Se tiver convênio, traga a carteirinha</li>\n                <li>Em caso de cancelamento, avise com 24h de antecedência</li>\n            </ul>\n            \n            <p><strong>Precisa remarcar ou cancelar?</strong><br>\nEntre em contato pelo nosso chatbot no Telegram ou ligue para (11) 9999-8888.</p>\n        </div>\n        \n        <div class=\"footer\">\n            <p>Este é um e-mail automático. Para dúvidas, entre em contato conosco.</p>\n            <p>🏥 <strong>Clínica Médica Digital</strong> | 📞 (11) 9999-8888 | 📧 contato@clinica.com</p>\n        </div>\n    </div>\n</body>\n</html>"
+        },
+        "options": {}
+      },
+      "id": "906fc64c-8c2d-409f-b0bd-4da9cc4e9173",
+      "name": "Send Appointment Confirmation",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        928,
+        704
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "ec69dbc9-9a47-47a8-9546-f29ac83c08b4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "PbsBjYjFhJuYzWcN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract cancellation details from the API response\nconst response = $input.all()[0].json.response;\nconst userMessage = $('Workflow Trigger').first().json.message;\nconst userName = $('Workflow Trigger').first().json.user_name || 'Paciente';\n\n// Extract patient info from the response\nlet patientName = userName;\nlet doctorName = '';\nlet appointmentDate = '';\nlet appointmentTime = '';\nlet patientEmail = '';\n\n// Parse the response to extract cancellation details\nconst responseText = response || '';\n\n// Extract doctor name\nconst doctorMatch = responseText.match(/Dr\\. ([A-Za-z\\s]+)/i);\nif (doctorMatch) {\n  doctorName = doctorMatch[1].trim();\n}\n\n// Extract date (DD/MM/YYYY format)\nconst dateMatch = responseText.match(/(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\nif (dateMatch) {\n  appointmentDate = `${dateMatch[1]}/${dateMatch[2]}/${dateMatch[3]}`;\n}\n\n// Extract time (HH:MM format)\nconst timeMatch = responseText.match(/(\\d{1,2}):(\\d{2})/);\nif (timeMatch) {\n  appointmentTime = `${timeMatch[1]}:${timeMatch[2]}`;\n}\n\n// Generate a sample email (in real scenario, this would come from user data)\nif (!patientEmail) {\n  const emailBase = patientName.toLowerCase().replace(/\\s+/g, '.');\n  patientEmail = `${emailBase}@email.com`;\n}\n\nreturn {\n  json: {\n    patientName: patientName,\n    patientEmail: patientEmail,\n    doctorName: doctorName,\n    appointmentDate: appointmentDate,\n    appointmentTime: appointmentTime,\n    originalResponse: response,\n    userMessage: userMessage\n  }\n};"
+      },
+      "id": "fe7a5d3c-f70e-4848-96cd-600f41ee7dd5",
+      "name": "Extract Cancellation Details",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        720,
+        928
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.patientEmail }}",
+        "subject": "Confirmação de Cancelamento de Consulta",
+        "message": {
+          "to": "={{ $json.patientEmail }}",
+          "subject": "❌ Confirmação de Cancelamento de Consulta",
+          "emailFormat": "html",
+          "html": "=<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <style>\n        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n        .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n        .header { background-color: #FF6B6B; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }\n        .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }\n        .appointment-details { background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n        .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }\n        .detail-label { font-weight: bold; color: #555; }\n        .detail-value { color: #333; }\n        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }\n        .logo { font-size: 24px; margin-bottom: 10px; }\n        .cancel-icon { font-size: 48px; margin-bottom: 15px; }\n        .reschedule-box { background-color: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2196F3; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <div class=\"cancel-icon\">❌</div>\n            <h1>Consulta Cancelada</h1>\n            <div class=\"logo\">🏥 Clínica Médica Digital</div>\n        </div>\n        \n        <div class=\"content\">\n            <h2>Olá, {{ $json.patientName }}!</h2>\n            <p>Sua consulta foi cancelada conforme solicitado. Confira os detalhes abaixo:</p>\n            \n            <div class=\"appointment-details\">\n                <h3>📋 Consulta Cancelada</h3>\n                \n                <div class=\"detail-row\">\n                    <span class=\"detail-label\">👤 Paciente:</span>\n                    <span class=\"detail-value\">{{ $json.patientName }}</span>\n                </div>\n                \n                <div class=\"detail-row\">\n                    <span class=\"detail-label\">👨‍⚕️ Médico:</span>\n                    <span class=\"detail-value\">{{ $json.doctorName || 'Dr. Especialista' }}</span>\n                </div>\n                \n                <div class=\"detail-row\">\n                    <span class=\"detail-label\">📅 Data:</span>\n                    <span class=\"detail-value\">{{ $json.appointmentDate || 'Não informada' }}</span>\n                </div>\n                \n                <div class=\"detail-row\">\n                    <span class=\"detail-label\">🕐 Horário:</span>\n                    <span class=\"detail-value\">{{ $json.appointmentTime || 'Não informado' }}</span>\n                </div>\n                \n                <div class=\"detail-row\">\n                    <span class=\"detail-label\">⏰ Cancelado em:</span>\n                    <span class=\"detail-value\">{{ $now.format('DD/MM/YYYY HH:mm') }}</span>\n                </div>\n            </div>\n            \n            <div class=\"reschedule-box\">\n                <h3>💙 Quer reagendar?</h3>\n                <p>Ficamos tristes em vê-lo(a) cancelar, mas entendemos que imprevistos acontecem.</p>\n                <p><strong>Para agendar uma nova consulta:</strong></p>\n                <ul>\n                    <li>Entre em contato pelo nosso chatbot no Telegram</li>\n                    <li>Ligue para (11) 9999-8888</li>\n                    <li>Envie um e-mail para agendamento@clinica.com</li>\n                </ul>\n            </div>\n            \n            <h3>📝 Política de Cancelamento:</h3>\n            <ul>\n                <li>Cancelamentos podem ser feitos até 24h antes da consulta</li>\n                <li>Para reagendamentos de urgência, entre em contato por telefone</li>\n                <li>Consultas não canceladas serão cobradas</li>\n            </ul>\n        </div>\n        \n        <div class=\"footer\">\n            <p>Este é um e-mail automático. Para dúvidas, entre em contato conosco.</p>\n            <p>🏥 <strong>Clínica Médica Digital</strong> | 📞 (11) 9999-8888 | 📧 contato@clinica.com</p>\n        </div>\n    </div>\n</body>\n</html>"
+        },
+        "options": {}
+      },
+      "id": "529f4488-cdda-45c0-b12b-02e236955f30",
+      "name": "Send Cancellation Confirmation",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        960,
+        912
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "9405f1c6-f632-44be-bc8c-eaca1dcecc40",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "PbsBjYjFhJuYzWcN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "final-response",
+              "name": "finalResponse",
+              "type": "string",
+              "value": "={{ $('Call Medical API').item.json.response }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1ec34631-e946-4c3e-b089-be72cb787aa6",
+      "name": "Prepare Final Response",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1184,
+        800
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "*"
+        ],
+        "additionalFields": {}
+      },
+      "id": "427e93de-18b7-47be-bf36-f138caabf8ab",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        -512,
+        -176
+      ],
+      "webhookId": "912e007f-19d9-4b5a-a90e-12ba01c9978d",
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "LcniYcXKsoCgSLJN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "id": "4f1f7adf-830d-404b-b360-78844b3e5622",
+      "name": "Get Voice",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        -48,
+        144
+      ],
+      "webhookId": "1962cd81-9991-4199-a78a-2250bf29631a",
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "LcniYcXKsoCgSLJN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "0a236099-525e-4748-a57d-8b8e2c63c48b",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "24b7e8b8-6fce-4ddc-94b6-30b852891995",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{  $json.message.voice.file_id }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Voice"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "21c4a0a3-da7a-47d8-af0c-f631c4cc32c9",
+      "name": "Text Or Voice",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        -288,
+        -176
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "590b803f-833c-4854-bde7-5241d25b2b32",
+              "name": "user_message",
+              "type": "string",
+              "value": "={{ $json.message.text }}"
+            },
+            {
+              "id": "303e0b5d-3d37-48fc-bbd3-ce62dbe7ef78",
+              "name": "sessionId",
+              "type": "string",
+              "value": "={{ $json.message.chat.id }}"
+            },
+            {
+              "id": "user_id_field",
+              "name": "telegram_user_id",
+              "type": "string",
+              "value": "={{ $json.message.from.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "552d5de7-335a-4a23-90db-ec73de976bfd",
+      "name": "Prepare Text Context",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        64,
+        -416
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "voice_message",
+              "name": "user_message",
+              "type": "string",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "id": "voice_session",
+              "name": "sessionId",
+              "type": "string",
+              "value": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+            },
+            {
+              "id": "voice_user_id",
+              "name": "telegram_user_id",
+              "type": "string",
+              "value": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "491b5bd3-4852-485e-a3cb-4f3d3244dcc0",
+      "name": "Prepare Voice Context",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        416,
+        144
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "id": "f1daee05-4903-4961-9d82-498da89ce517",
+      "name": "Simple Memory1",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        576,
+        -112
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.user_message }}",
+        "options": {
+          "systemMessage": "Você é um assistente médico especializado em atendimento ao paciente.\n\nSEMPRE use a medical_assistant_tool quando o usuário:\n- Perguntar sobre horários disponíveis, agendamentos, cancelamentos\n- Perguntar sobre valores, preços, formas de pagamento  \n- Solicitar informações sobre médicos, especialidades, endereço\n- Quiser marcar, desmarcar ou remarcar consultas\n- Perguntar sobre qualquer serviço médico da clínica\n\nNUNCA responda diretamente sobre assuntos médicos - sempre use a tool.\n\nUse a tool passando:\n- message: a mensagem completa do paciente\n- user_id: o ID do usuário do telegram\n\nExemplos de quando usar:\nPaciente: \"Quero marcar uma consulta\" → USE A TOOL\nPaciente: \"Quais horários têm disponíveis?\" → USE A TOOL  \nPaciente: \"Quanto custa uma consulta?\" → USE A TOOL\nPaciente: \"Preciso cancelar meu horário\" → USE A TOOL\n\nApenas responda diretamente para cumprimentos simples:\nPaciente: \"Bom dia\" → \"Bom dia! Como posso ajudar?\"\nPaciente: \"Obrigado\" → \"Por nada! Estou aqui para ajudar.\""
+        }
+      },
+      "id": "e79372fe-de4c-4a2b-a7c3-95dcf6ea87d3",
+      "name": "AI Agent Text",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        480,
+        -432
+      ],
+      "typeVersion": 1.9
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.user_message }}",
+        "options": {
+          "systemMessage": "Você é um assistente médico especializado em atendimento ao paciente.\n\nSEMPRE use a medical_assistant_tool quando o usuário:\n- Perguntar sobre horários disponíveis, agendamentos, cancelamentos\n- Perguntar sobre valores, preços, formas de pagamento  \n- Solicitar informações sobre médicos, especialidades, endereço\n- Quiser marcar, desmarcar ou remarcar consultas\n- Perguntar sobre qualquer serviço médico da clínica\n\nNUNCA responda diretamente sobre assuntos médicos - sempre use a tool.\n\nUse a tool passando:\n- message: a mensagem completa do paciente\n- user_id: o ID do usuário do telegram\n\nExemplos de quando usar:\nPaciente: \"Quero marcar uma consulta\" → USE A TOOL\nPaciente: \"Quais horários têm disponíveis?\" → USE A TOOL  \nPaciente: \"Quanto custa uma consulta?\" → USE A TOOL\nPaciente: \"Preciso cancelar meu horário\" → USE A TOOL\n\nApenas responda diretamente para cumprimentos simples:\nPaciente: \"Bom dia\" → \"Bom dia! Como posso ajudar?\"\nPaciente: \"Obrigado\" → \"Por nada! Estou aqui para ajudar.\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        656,
+        144
+      ],
+      "id": "4579538e-6be4-4653-ac35-1be14ad0aba6",
+      "name": "AI Agent Voice"
+    },
+    {
+      "parameters": {
+        "resource": "speech",
+        "operation": "speechToText",
+        "additionalOptions": {},
+        "requestOptions": {}
+      },
+      "type": "@elevenlabs/n8n-nodes-elevenlabs.elevenLabs",
+      "typeVersion": 1,
+      "position": [
+        208,
+        160
+      ],
+      "id": "b77e442c-a2c7-48de-8431-c149b65b4413",
+      "name": "Transcribe audio or video",
+      "credentials": {
+        "elevenLabsApi": {
+          "id": "RQOeDF2CBehxOL18",
+          "name": "ElevenLabs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "speech",
+        "voice": {
+          "__rl": true,
+          "value": "2EiwWnXFnvU5JabPnv8n",
+          "mode": "list",
+          "cachedResultName": "Clyde"
+        },
+        "text": "={{ $json.output }}",
+        "additionalOptions": {},
+        "requestOptions": {}
+      },
+      "type": "@elevenlabs/n8n-nodes-elevenlabs.elevenLabs",
+      "typeVersion": 1,
+      "position": [
+        976,
+        144
+      ],
+      "id": "8bdaa1db-99df-4ae4-b115-1dbc7d740c61",
+      "name": "Convert text to speech",
+      "credentials": {
+        "elevenLabsApi": {
+          "id": "RQOeDF2CBehxOL18",
+          "name": "ElevenLabs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAudio",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        144
+      ],
+      "id": "4e66d646-9b70-4697-ad5c-b045951a4a18",
+      "name": "Send an audio file",
+      "webhookId": "03d8f6cf-fbec-47be-941f-ef2f27a25540",
+      "credentials": {
+        "telegramApi": {
+          "id": "LcniYcXKsoCgSLJN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        -416
+      ],
+      "id": "1a555c7e-b292-4204-8e01-a23301462150",
+      "name": "Send a text message",
+      "webhookId": "efd46dda-8de0-4c64-9703-504697d3e271",
+      "credentials": {
+        "telegramApi": {
+          "id": "LcniYcXKsoCgSLJN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        352,
+        -208
+      ],
+      "id": "f5762374-7df8-41bc-8439-e04a422e00b4",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "9IAFohBpVaPIC7ba",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        400,
+        480
+      ],
+      "id": "8627dde5-d248-4ee0-844a-2240dcc72be3",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "9IAFohBpVaPIC7ba",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "medical_assistant_tool",
+        "description": "Você é um assistente médico especializado em atendimento ao paciente.\n\nSEMPRE use a medical_assistant_tool quando o usuário:\n- Perguntar sobre horários disponíveis, agendamentos, cancelamentos\n- Perguntar sobre valores, preços, formas de pagamento  \n- Solicitar informações sobre médicos, especialidades, endereço\n- Quiser marcar, desmarcar ou remarcar consultas\n- Perguntar sobre qualquer serviço médico da clínica\n\nNUNCA responda diretamente sobre assuntos médicos - sempre use a tool.\n\nUse a tool com estes parâmetros:\n- message: a mensagem completa do paciente\n- message_type: \"text\" para texto, \"audio\" para áudio\n\nExemplos de quando usar:\nPaciente: \"Quero marcar uma consulta\" → USE A TOOL\nPaciente: \"Quais horários têm disponíveis?\" → USE A TOOL  \nPaciente: \"Quanto custa uma consulta?\" → USE A TOOL\nPaciente: \"Preciso cancelar meu horário\" → USE A TOOL\n\nApenas responda diretamente para cumprimentos simples:\nPaciente: \"Bom dia\" → \"Bom dia! Como posso ajudar?\"\nPaciente: \"Obrigado\" → \"Por nada! Estou aqui para ajudar.\"",
+        "workflowId": {
+          "__rl": true,
+          "value": "Oc4lfpiWlFlRcuSp",
+          "mode": "list",
+          "cachedResultName": "My Sub-Workflow 2"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('message', 'The complete user message', 'string') }}",
+            "user_id": "={{ $json.telegram_user_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "7a54b341-b8e8-4f19-a377-181c56cf42bc",
+      "name": "medical_assistant_tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "position": [
+        768,
+        -112
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "id": "bc007dab-2b52-490e-8540-85ca138295d5",
+      "name": "Simple Memory2",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        592,
+        496
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "name": "medical_assistant_tool",
+        "description": "Você é um assistente médico especializado em atendimento ao paciente.\n\nSEMPRE use a medical_assistant_tool quando o usuário:\n- Perguntar sobre horários disponíveis, agendamentos, cancelamentos\n- Perguntar sobre valores, preços, formas de pagamento  \n- Solicitar informações sobre médicos, especialidades, endereço\n- Quiser marcar, desmarcar ou remarcar consultas\n- Perguntar sobre qualquer serviço médico da clínica\n\nNUNCA responda diretamente sobre assuntos médicos - sempre use a tool.\n\nUse a tool com estes parâmetros:\n- message: a mensagem completa do paciente\n- message_type: \"text\" para texto, \"audio\" para áudio\n\nExemplos de quando usar:\nPaciente: \"Quero marcar uma consulta\" → USE A TOOL\nPaciente: \"Quais horários têm disponíveis?\" → USE A TOOL  \nPaciente: \"Quanto custa uma consulta?\" → USE A TOOL\nPaciente: \"Preciso cancelar meu horário\" → USE A TOOL\n\nApenas responda diretamente para cumprimentos simples:\nPaciente: \"Bom dia\" → \"Bom dia! Como posso ajudar?\"\nPaciente: \"Obrigado\" → \"Por nada! Estou aqui para ajudar.\"",
+        "workflowId": {
+          "__rl": true,
+          "value": "Oc4lfpiWlFlRcuSp",
+          "mode": "list",
+          "cachedResultName": "My Sub-Workflow 2"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('message', 'The complete user message', 'string') }}",
+            "user_id": "={{ $json.telegram_user_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "dc38b77d-7115-4531-8dc6-e2012148a2f4",
+      "name": "medical_assistant_tool2",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "position": [
+        896,
+        464
+      ],
+      "typeVersion": 2
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Call Medical API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Medical API": {
+      "main": [
+        [
+          {
+            "node": "Check Action Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Action Type": {
+      "main": [
+        [
+          {
+            "node": "Extract Appointment Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Cancellation Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Appointment Details": {
+      "main": [
+        [
+          {
+            "node": "Send Appointment Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Cancellation Details": {
+      "main": [
+        [
+          {
+            "node": "Send Cancellation Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Appointment Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Prepare Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Cancellation Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Prepare Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Voice": {
+      "main": [
+        [
+          {
+            "node": "Transcribe audio or video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Or Voice": {
+      "main": [
+        [
+          {
+            "node": "Prepare Text Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Text Or Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Text Context": {
+      "main": [
+        [
+          {
+            "node": "AI Agent Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Voice Context": {
+      "main": [
+        [
+          {
+            "node": "AI Agent Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent Text",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent Text": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe audio or video": {
+      "main": [
+        [
+          {
+            "node": "Prepare Voice Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent Voice": {
+      "main": [
+        [
+          {
+            "node": "Convert text to speech",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert text to speech": {
+      "main": [
+        [
+          {
+            "node": "Send an audio file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent Text",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "medical_assistant_tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Text",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent Voice",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory2": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent Voice",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "medical_assistant_tool2": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Voice",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e16e42f8-badd-4c24-af5e-90d9e7eea1df",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c90fbe382f949c6f99c6ff9ce5b7acd3e6b5fd5114eaaa499bad193068630dfe"
+  },
+  "id": "mP8s4am6Y3MIeUkM",
+  "tags": []
+}
